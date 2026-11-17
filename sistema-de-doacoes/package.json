@@ -8,10 +8,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "dev": "vite",
     "api": "json-server --watch db.json --port 3000"
   },
   "dependencies": {
+    "axios": "^1.21.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.5"

@@ -1,42 +1,45 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-
-const API = "http://localhost:3000";
+import api from "../services/api";
 
 export default function Home() {
-  const { token, logout } = useAuth();
-  const [nome, setNome] = useState("");
+  const { usuario, logout } = useAuth();
+  const navigate = useNavigate();
   const [resumo, setResumo] = useState({ total: 0, pendentes: 0, horas: 0 });
 
   useEffect(() => {
     async function carregar() {
       try {
-        const [respDoacoes, respUser] = await Promise.all([
-          fetch(`${API}/doacoes`),
-          fetch(`${API}/users/${token}`),
-        ]);
+        const resp = await api.get("/api/doacoes");
+        const doacoes = resp.data;
 
-        if (respUser.ok) {
-          const user = await respUser.json();
-          setNome(user.nome);
+        setResumo({
+          total: doacoes.length,
+          pendentes: doacoes.filter((d) => d.status === "Pendente").length,
+          horas: doacoes.reduce(
+            (soma, d) => soma + Number(d.horas_concedidas || 0),
+            0
+          ),
+        });
+      } catch (err) {
+        if (err.response?.status === 401) {
+          // token expirado ou inválido: volta para o login
+          logout();
+          navigate("/login");
         }
-
-        if (respDoacoes.ok) {
-          const doacoes = await respDoacoes.json();
-          setResumo({
-            total: doacoes.length,
-            pendentes: doacoes.filter((d) => d.status === "Pendente").length,
-            horas: doacoes.reduce((soma, d) => soma + (d.horasConcedidas || 0), 0),
-          });
-        }
-      } catch {
-        // sem servidor: mantém os valores zerados
+        // outros erros: mantém os valores zerados
       }
     }
 
     carregar();
-  }, [token]);
+  }, []);
+
+  function handleSair(e) {
+    e.preventDefault();
+    logout();
+    navigate("/login");
+  }
 
   return (
     <div id="app-root">
@@ -49,14 +52,14 @@ export default function Home() {
             <li><Link to="/doacoes/nova">Cadastrar doação</Link></li>
           </ul>
           <ul>
-            <li><a href="#" onClick={(e) => { e.preventDefault(); logout(); }}>Sair</a></li>
+            <li><a href="#" onClick={handleSair}>Sair</a></li>
           </ul>
         </div>
       </aside>
 
       <header>
         <h2>Bem-vindo ao Sistema de Doações</h2>
-        <span>{nome}</span>
+        <span>{usuario?.nome}</span>
       </header>
 
       <div className="container">

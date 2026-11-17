@@ -286,3 +286,115 @@ aside li a {
   font-weight: bold;
   color: var(--azul);
 }
+
+/* ---------- Conteúdo Principal & Seções ---------- */
+.conteudo-principal {
+  grid-column: 2;
+  grid-row: 2;
+  overflow-y: auto;
+}
+
+.subtitulo-header {
+  font-size: 1.35vh;
+  color: var(--cinza);
+  margin: 4px 0 0 0;
+}
+
+.subtitulo-header strong {
+  color: var(--azul);
+}
+
+.badge-saldo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background-color: var(--azul-claro);
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #c7daf1;
+}
+
+.badge-saldo small {
+  font-size: 1.2vh;
+  color: var(--cinza);
+}
+
+.badge-saldo strong {
+  font-size: 2.2vh;
+  color: var(--azul);
+}
+
+.secao-dashboard {
+  padding: 0 30px;
+}
+
+.secao-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.secao-topo h3 {
+  margin: 0;
+  font-size: 1.9vh;
+  color: var(--azul);
+}
+
+/* ---------- Grid de Campanhas ---------- */
+.grid-campanhas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.card-campanha {
+  background-color: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-campanha-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.card-campanha-topo h4 {
+  margin: 0;
+  font-size: 1.8vh;
+  color: var(--azul);
+}
+
+.campanha-descricao {
+  font-size: 1.45vh;
+  color: #4a5568;
+  margin: 0 0 15px 0;
+  line-height: 1.4;
+}
+
+.campanha-info {
+  background-color: var(--fundo);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+.campanha-info p {
+  margin: 4px 0;
+  font-size: 1.3vh;
+  color: var(--azul);
+}
+
+.botao-campanha {
+  font-size: 1.4vh;
+  padding: 10px;
+  margin-top: auto;
+}

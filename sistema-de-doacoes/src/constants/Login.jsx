@@ -1,33 +1,43 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import api from "../services/api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
-  const { login } = useAuth();
+  const [carregando, setCarregando] = useState(false);
+
+  const { login, logado } = useAuth();
   const navigate = useNavigate();
+
+  // Redireciona para /home caso já esteja autenticado
+  useEffect(() => {
+    if (logado) {
+      navigate("/home", { replace: true });
+    }
+  }, [logado, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setErro("");
+    setCarregando(true);
 
     try {
-      const resp = await api.post("/api/auth/login", { email, senha });
-      const { token, usuario } = resp.data;
-
-      login(token, usuario);
-      navigate("/home");
-    } catch (err) {
-      if (err.response) {
-        // a API respondeu com erro (400, 401, 403...)
-        setErro(err.response.data?.mensagem || "Não foi possível fazer login");
+      const resultado = await login(email, senha);
+      if (resultado.sucesso) {
+        navigate("/home");
       } else {
-        // a API nem respondeu (fora do ar, URL errada, CORS)
-        setErro("Não foi possível conectar ao servidor");
+        let msg = resultado.mensagem;
+        if (resultado.tentativas_restantes !== undefined) {
+          msg += ` (Tentativas restantes: ${resultado.tentativas_restantes})`;
+        }
+        setErro(msg);
       }
+    } catch {
+      setErro("Não foi possível conectar ao servidor.");
+    } finally {
+      setCarregando(false);
     }
   }
 
@@ -42,6 +52,7 @@ export default function Login() {
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            placeholder="seu.email@aluno.fmpsc.edu.br"
             required
           />
 
@@ -51,12 +62,22 @@ export default function Login() {
             id="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
+            placeholder="Digite sua senha"
             required
           />
 
           {erro && <p className="erro">{erro}</p>}
 
-          <button className="botao" type="submit">Entrar</button>
+          <button className="botao" type="submit" disabled={carregando}>
+            {carregando ? "Entrando..." : "Entrar"}
+          </button>
+
+          <p style={{ marginTop: "1.2rem", textAlign: "center", fontSize: "1.5vh" }}>
+            Não possui uma conta?{" "}
+            <Link to="/registrar" className="link">
+              Cadastre-se aqui
+            </Link>
+          </p>
         </form>
       </div>
     </div>

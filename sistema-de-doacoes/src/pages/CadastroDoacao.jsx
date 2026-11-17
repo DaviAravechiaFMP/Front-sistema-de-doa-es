@@ -1,9 +1,8 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 
-// data de hoje no fuso local (toISOString usaria UTC e viraria o dia à noite)
 function hojeLocal() {
   const agora = new Date();
   return new Date(agora.getTime() - agora.getTimezoneOffset() * 60000)
@@ -12,14 +11,45 @@ function hojeLocal() {
 }
 
 export default function CadastroDoacao() {
-  const { usuario, logout } = useAuth();
+  const { usuario, perfil, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const [campanhaId, setCampanhaId] = useState("1");
+  const [campanhas, setCampanhas] = useState([]);
+  const [campanhaId, setCampanhaId] = useState(searchParams.get("campanha") || "");
   const [data, setData] = useState(hojeLocal());
-  const [localEntrega, setLocalEntrega] = useState("");
+  const [localEntrega, setLocalEntrega] = useState("Recepção Principal FMP");
   const [erro, setErro] = useState("");
+  const [carregandoCampanhas, setCarregandoCampanhas] = useState(true);
   const [enviando, setEnviando] = useState(false);
+
+  // Busca lista real de campanhas da API
+  useEffect(() => {
+    async function carregarCampanhas() {
+      try {
+        const resp = await api.get("/api/campanhas");
+        setCampanhas(resp.data || []);
+        // Se a URL passou parâmetro de campanha, seleciona ela; caso contrário, seleciona a primeira ativa se houver
+        const paramCampanha = searchParams.get("campanha");
+        if (paramCampanha) {
+          setCampanhaId(paramCampanha);
+        } else if (resp.data?.length > 0) {
+          setCampanhaId(String(resp.data[0].id));
+        }
+      } catch (err) {
+        if (err.response?.status === 401) {
+          logout();
+          navigate("/login");
+          return;
+        }
+        console.error("Erro ao carregar campanhas:", err);
+      } finally {
+        setCarregandoCampanhas(false);
+      }
+    }
+
+    carregarCampanhas();
+  }, [searchParams, logout, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -34,10 +64,10 @@ export default function CadastroDoacao() {
     try {
       await api.post("/api/doacoes", {
         aluno_id: usuario.id,
-        campanha_id: Number(campanhaId),
+        campanha_id: campanhaId ? Number(campanhaId) : null,
         data,
         status: "Pendente",
-        local_entrega: localEntrega,
+        local_entrega: localEntrega.trim(),
       });
 
       navigate("/doacoes");
@@ -48,9 +78,9 @@ export default function CadastroDoacao() {
         return;
       }
       if (err.response) {
-        setErro(err.response.data?.mensagem || "Erro ao salvar a doação");
+        setErro(err.response.data?.mensagem || "Erro ao salvar a doação.");
       } else {
-        setErro("Não foi possível conectar ao servidor");
+        setErro("Não foi possível conectar ao servidor.");
       }
     } finally {
       setEnviando(false);
@@ -60,20 +90,37 @@ export default function CadastroDoacao() {
   return (
     <div className="pagina-centro">
       <div className="card-form">
-        <h1>Cadastrar doação</h1>
+        <h1>Cadastrar Doação</h1>
+
+        <div style={{ marginBottom: "15px", fontSize: "1.4vh", color: "var(--cinza)" }}>
+          <p style={{ margin: "2px 0" }}>
+            Doador: <strong>{perfil?.nome || usuario?.nome}</strong>
+          </p>
+          {perfil?.matricula && (
+            <p style={{ margin: "2px 0" }}>
+              Matrícula: <strong>{perfil.matricula}</strong> | Saldo atual:{" "}
+              <strong>{perfil?.saldo_horas || "0.00"}h</strong>
+            </p>
+          )}
+        </div>
 
         <form className="formulario" onSubmit={handleSubmit}>
-          <label htmlFor="campanha">Campanha:</label>
+          <label htmlFor="campanha">Campanha Institucional:</label>
           <select
             id="campanha"
             value={campanhaId}
             onChange={(e) => setCampanhaId(e.target.value)}
+            disabled={carregandoCampanhas}
           >
-            <option value="1">Campanha de Inverno 2026</option>
-            <option value="2">SOS Enchentes RS</option>
+            <option value="">Geral (Sem campanha específica)</option>
+            {campanhas.map((campanha) => (
+              <option key={campanha.id} value={campanha.id}>
+                {campanha.titulo} ({campanha.status})
+              </option>
+            ))}
           </select>
 
-          <label htmlFor="data">Data:</label>
+          <label htmlFor="data">Data da Doação:</label>
           <input
             id="data"
             type="date"
@@ -82,7 +129,7 @@ export default function CadastroDoacao() {
             required
           />
 
-          <label htmlFor="local">Local de entrega:</label>
+          <label htmlFor="local">Local de Entrega na FMP:</label>
           <input
             id="local"
             value={localEntrega}
@@ -95,9 +142,11 @@ export default function CadastroDoacao() {
           {erro && <p className="erro">{erro}</p>}
 
           <button className="botao" type="submit" disabled={enviando}>
-            {enviando ? "Salvando..." : "Cadastrar"}
+            {enviando ? "Salvando doação..." : "Registrar Doação"}
           </button>
-          <Link className="link" to="/home">Cancelar</Link>
+          <Link className="link" to="/home" style={{ textAlign: "center", marginTop: "10px" }}>
+            Cancelar e voltar
+          </Link>
         </form>
       </div>
     </div>
